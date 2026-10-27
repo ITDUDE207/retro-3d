@@ -12,3 +12,11 @@ public/uploads/*.glb
 # local scratch
 *.log
 .agent_tmp/
+
+# local environment (never commit real credentials)
+.env
+.env.local
+.env*.local
+
+# Vercel CLI scratch
+.vercel/

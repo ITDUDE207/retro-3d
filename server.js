@@ -2,24 +2,24 @@
  * GeoWorld 3D Network - Express application core.
  *
  * Responsibilities:
- *   - bootstrap the SQLite database (`geoworld.db`) and the `worlds` table
+ *   - bootstrap the persistence backend (Neon Postgres on Vercel, SQLite
+ *     locally) and the `worlds` table
  *   - serve the static dashboard / sandbox from `public/`
  *   - expose the world catalog API and the procedural .glb assembler
  *
  * Run with:  npm start        (defaults to http://localhost:3000)
+ * Deploy:    Vercel routes every request to api/index.js, which wraps `app`.
  */
 
 import express from 'express';
-import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import path from 'node:path';
 
 import { buildStarterWorldBuffer } from './lib/glb-builder.js';
+import { saveWorldAsset } from './lib/glb-store.js';
+import { backendLabel, PUBLIC_DIR, USE_BLOB, USE_POSTGRES } from './lib/config.js';
 import {
-  UPLOAD_DIR,
-  PUBLIC_DIR,
-  DB_PATH,
-  openDatabase,
+  initDatabase,
   listWorlds,
   getWorldById,
   insertWorld,
@@ -48,7 +48,9 @@ app.use((req, res, next) => {
 });
 
 // The dashboard and sandbox are fully self-contained: A-Frame and the glTF
-// exporter come from pinned CDNs and everything else is same-origin.
+// exporter come from pinned CDNs and everything else is same-origin. When
+// parcels are stored in Vercel Blob they are fetched from that CDN, hence the
+// extra img-src/connect-src allowance.
 //
 // `'unsafe-eval'` is required by A-Frame 1.4.2, which builds msdf font
 // metric accessors with `new Function` (and uses the same trick to resolve
@@ -63,10 +65,10 @@ app.use((req, res, next) => {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://aframe.io https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https://*.public.blob.vercel-storage.com",
       "font-src 'self' data:",
       "media-src 'self' blob: data:",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.public.blob.vercel-storage.com",
       "worker-src 'self' blob:",
       "object-src 'none'",
       "base-uri 'self'",
@@ -116,10 +118,15 @@ function serializeWorld(row) {
   };
 }
 
+/** Wraps an async route handler so rejections reach the error middleware. */
+function asyncRoute(handler) {
+  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
 /* ------------------------------------------------------------------ *
  * Simple in-memory throttle so a single client cannot flood the
  * procedural assembler. Not a substitute for an edge rate limiter, but
- * keeps the local instance responsive.
+ * keeps a warm instance responsive.
  * ------------------------------------------------------------------ */
 const CREATE_WINDOW_MS = 60_000;
 const CREATE_MAX_PER_WINDOW = 20;
@@ -141,6 +148,9 @@ function throttleCreate(req, res, next) {
 
 /* ------------------------------------------------------------------ *
  * Static assets.
+ *
+ * On Vercel the CDN serves `public/` directly and these routes never run;
+ * locally they are the only way the dashboard is reachable.
  * ------------------------------------------------------------------ */
 app.use(
   express.static(PUBLIC_DIR, {
@@ -158,45 +168,50 @@ app.use(
 /* ------------------------------------------------------------------ *
  * API: catalog.
  * ------------------------------------------------------------------ */
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ONLINE',
-    database: path.basename(DB_PATH),
-    worlds: countWorlds(),
-    time: new Date().toISOString(),
-  });
-});
+app.get(
+  '/api/health',
+  asyncRoute(async (req, res) => {
+    const { database, storage } = backendLabel();
+    res.json({
+      status: 'ONLINE',
+      database,
+      storage,
+      worlds: await countWorlds(),
+      time: new Date().toISOString(),
+    });
+  })
+);
 
-app.get('/api/worlds', (req, res, next) => {
-  try {
-    const worlds = listWorlds().map(serializeWorld);
+app.get(
+  '/api/worlds',
+  asyncRoute(async (req, res) => {
+    const worlds = (await listWorlds()).map(serializeWorld);
     res.json({ count: worlds.length, worlds });
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
-app.get('/api/worlds/:id', (req, res, next) => {
-  try {
+app.get(
+  '/api/worlds/:id',
+  asyncRoute(async (req, res) => {
     const id = parseId(req.params.id);
     if (id === null) {
       return res.status(400).json({ error: 'World id must be a positive integer.' });
     }
-    const world = getWorldById(id);
+    const world = await getWorldById(id);
     if (!world) {
       return res.status(404).json({ error: `World ${id} not found in the catalog.` });
     }
     return res.json({ world: serializeWorld(world) });
-  } catch (err) {
-    return next(err);
-  }
-});
+  })
+);
 
 /* ------------------------------------------------------------------ *
  * API: procedural world creation.
  * ------------------------------------------------------------------ */
-app.post('/api/create-world', throttleCreate, async (req, res, next) => {
-  try {
+app.post(
+  '/api/create-world',
+  throttleCreate,
+  asyncRoute(async (req, res) => {
     const body = req.body;
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return res.status(400).json({ error: 'Request body must be a JSON object.' });
@@ -225,20 +240,14 @@ app.post('/api/create-world', throttleCreate, async (req, res, next) => {
     // Unique, non-guessable, traversal-proof filename.
     const unique = crypto.randomBytes(6).toString('hex');
     const filename = `${slugify(worldName)}-${unique}.glb`;
-    const absolutePath = path.join(UPLOAD_DIR, filename);
-    const relativeUrl = `/uploads/${filename}`;
 
-    // Defence in depth: assert the resolved path is still inside uploads/.
-    if (path.dirname(path.resolve(absolutePath)) !== path.resolve(UPLOAD_DIR)) {
-      return res.status(400).json({ error: 'Invalid world name.' });
-    }
+    // Vercel Blob in production, public/uploads/ locally.
+    const filePath = await saveWorldAsset(filename, glb);
 
-    await fs.writeFile(absolutePath, Buffer.from(glb));
-
-    const world = insertWorld({
+    const world = await insertWorld({
       name: worldName,
       creator: homesteaderName,
-      filePath: relativeUrl,
+      filePath,
     });
 
     return res.status(201).json({
@@ -246,10 +255,8 @@ app.post('/api/create-world', throttleCreate, async (req, res, next) => {
       bytes: glb.byteLength,
       world: serializeWorld(world),
     });
-  } catch (err) {
-    return next(err);
-  }
-});
+  })
+);
 
 /* ------------------------------------------------------------------ *
  * Page routes.
@@ -280,8 +287,9 @@ app.use((err, req, res, next) => {
 /* ------------------------------------------------------------------ *
  * Boot.
  * ------------------------------------------------------------------ */
-export function startServer(port = PORT, host = HOST) {
-  openDatabase();
+export async function startServer(port = PORT, host = HOST) {
+  await initDatabase();
+  const { database, storage } = backendLabel();
   return new Promise((resolve) => {
     const server = app.listen(port, host, () => {
       console.log('==================================================');
@@ -289,8 +297,9 @@ export function startServer(port = PORT, host = HOST) {
       console.log('==================================================');
       console.log(`  dashboard : http://localhost:${port}/`);
       console.log(`  sandbox   : http://localhost:${port}/explore?id=<id>`);
-      console.log(`  database  : ${DB_PATH}`);
-      console.log(`  uploads   : ${UPLOAD_DIR}`);
+      console.log(`  database  : ${database}`);
+      console.log(`  storage   : ${storage}`);
+      console.log(`  backends  : postgres=${USE_POSTGRES} blob=${USE_BLOB}`);
       console.log('==================================================');
       resolve(server);
     });
@@ -299,7 +308,9 @@ export function startServer(port = PORT, host = HOST) {
 
 export { app };
 
-const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
+const isDirectRun =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname);
 if (isDirectRun) {
   startServer().catch((err) => {
     console.error('[geoworld] failed to start:', err);
