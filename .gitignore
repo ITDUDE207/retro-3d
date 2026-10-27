@@ -1,0 +1,14 @@
+# dependencies
+node_modules/
+
+# generated SQLite database (recreate with `npm run seed`)
+geoworld.db
+geoworld.db-shm
+geoworld.db-wal
+
+# procedurally generated world assets (recreate with `npm run seed`)
+public/uploads/*.glb
+
+# local scratch
+*.log
+.agent_tmp/

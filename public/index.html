@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GeoWorld 3D Network :: Central Hub</title>
+<meta name="description" content="GeoWorld 3D Network - claim your parcel of the retro 3D web. A modern reimagining of the 1996 GeoCities VRML neighborhoods." />
+<link rel="stylesheet" href="/css/terminal.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Ctext x='1' y='12' font-family='monospace' font-size='11' fill='%2300ff00'%3EG%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+<div class="terminal-shell">
+
+  <header class="masthead">
+    <h1>GeoWorld 3D Network</h1>
+    <p class="tagline">// homestead your own corner of cyberspace //</p>
+    <pre class="ascii" aria-hidden="true">
+   ____            __        __         _     _   ____  ____
+  / ___| ___  ___  \ \      / /__  _ __| | __| |  |___ \|  _ \
+ | |  _ / _ \/ _ \  \ \ /\ / / _ \| '__| |/ _` |    __) | | | |
+ | |_| |  __/ (_) |  \ V  V / (_) | |  | | (_| |   / __/| |_| |
+  \____|\___|\___/    \_/\_/ \___/|_|  |_|\__,_|  |_____|____/
+        N E T W O R K   ::   E S T .   1 9 9 6</pre>
+  </header>
+
+  <div class="marquee" aria-hidden="true">
+    <span>&#9733; WELCOME TO THE 3D WEB &#9733; CLAIM YOUR FREE HOMESTEAD PARCEL TODAY &#9733; 100% GLTF-POWERED &#9733; NO PLUG-INS REQUIRED &#9733; WALK THE GRID WITH WASD &#9733; BEST VIEWED IN ANY MODERN BROWSER &#9733; NEIGHBORHOODS OPEN 24 HOURS &#9733;</span>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- ---------------- Identity panel ---------------- -->
+    <section class="panel" data-label="step 1 :: identity">
+      <h2 style="margin-top:0;font-size:15px;letter-spacing:3px;">HOMESTEADER LOGIN</h2>
+      <p style="color:var(--neon-dim);font-size:12px;margin-top:0;">
+        Your handle is stored locally in this browser only. No password, no tracking, no cookie jar.
+      </p>
+      <form id="login-form" autocomplete="off">
+        <label class="field">
+          <span>Homesteader Name</span>
+          <input type="text" id="username-input" name="username" maxlength="32"
+                 placeholder="e.g. webmaster_x" required />
+        </label>
+        <div class="btn-row">
+          <button type="submit" id="login-btn">Jack In</button>
+          <button type="button" id="logout-btn" class="danger">Jack Out</button>
+        </div>
+        <p class="status-line" id="login-status">STATUS: OFFLINE</p>
+      </form>
+    </section>
+
+    <!-- ---------------- Creation panel ---------------- -->
+    <section class="panel" data-label="step 2 :: claim a parcel">
+      <h2 style="margin-top:0;font-size:15px;letter-spacing:3px;">CREATE NEW WORLD</h2>
+      <p style="color:var(--neon-dim);font-size:12px;margin-top:0;">
+        The mainframe procedurally assembles a binary .glb starter homestead:
+        neon checker grid floor, perimeter glow border and three low-poly columns.
+      </p>
+      <form id="create-form" autocomplete="off">
+        <label class="field">
+          <span>World Name</span>
+          <input type="text" id="world-name-input" name="worldName" maxlength="60"
+                 placeholder="e.g. Neon Grid Plaza" required />
+        </label>
+        <div class="btn-row">
+          <button type="submit" id="create-btn" disabled>Generate .GLB Parcel</button>
+        </div>
+        <p class="status-line" id="create-status">STATUS: AWAITING IDENTITY</p>
+      </form>
+    </section>
+
+  </div>
+
+  <!-- ---------------- Catalog ---------------- -->
+  <section class="panel" data-label="step 3 :: active real estate">
+    <div class="btn-row" style="justify-content:space-between;align-items:baseline;">
+      <h2 style="margin:0;font-size:15px;letter-spacing:3px;">ACTIVE DIGITAL REAL ESTATE</h2>
+      <div class="btn-row">
+        <span class="badge" id="world-count">0 WORLDS</span>
+        <button type="button" id="refresh-btn" style="font-size:11px;padding:5px 10px;">Refresh</button>
+      </div>
+    </div>
+    <p class="status-line" id="catalog-status" style="margin-top:8px;">Polling /api/worlds ...</p>
+
+    <table class="catalog" style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th style="width:60px;">ID</th>
+          <th>World Name</th>
+          <th style="width:170px;">Creator Handle</th>
+          <th style="width:170px;">Registered</th>
+          <th style="width:130px;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="catalog-body">
+        <tr><td colspan="5" class="empty-row">Loading catalog ...</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="footer">
+    GeoWorld 3D Network &middot; Express + SQLite + A-Frame &middot; glTF 2.0 binary assets<br />
+    <span class="blink">&#9608;</span> READY<span class="blink">&#9608;</span>
+  </p>
+
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

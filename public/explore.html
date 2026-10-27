@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GeoWorld 3D Network :: Sandbox</title>
+<meta name="description" content="Walk a GeoWorld 3D homestead in your browser." />
+<link rel="stylesheet" href="/css/terminal.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Ctext x='1' y='12' font-family='monospace' font-size='11' fill='%2300ff00'%3EG%3C/text%3E%3C/svg%3E" />
+
+<!-- A-Frame bundles three.js r147 (same revision as the exporter below). -->
+<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/exporters/GLTFExporter.js"></script>
+</head>
+<body class="explore-body">
+
+<!-- ===================== 3D CANVAS ===================== -->
+<a-scene
+  id="world-scene"
+  background="color: #000000"
+  fog="type: exponential; color: #000000; density: 0.012"
+  renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false"
+  vr-mode-ui="enabled: false"
+  loading-screen="enabled: false">
+
+  <a-camera
+    id="camera"
+    position="0 1.6 14"
+    fov="78"
+    near="0.05"
+    far="400"
+    wasd-controls="acceleration: 62; fly: false; wsInverted: false"
+    look-controls="pointerLockEnabled: false; reverseMouseDrag: false; touchEnabled: true">
+    <a-entity id="cursor"
+      cursor="fuse: false; rayOrigin: mouse"
+      raycaster="objects: [data-editable]; far: 60; interval: 60">
+    </a-entity>
+  </a-camera>
+
+  <!-- Retro terminal lighting. -->
+  <a-entity light="type: ambient; color: #0a2a0a; intensity: 1.1"></a-entity>
+  <a-entity light="type: directional; color: #b6ffb6; intensity: 0.7" position="8 20 12"></a-entity>
+  <a-entity light="type: hemisphere; color: #00ff66; groundColor: #001a00; intensity: 0.5"></a-entity>
+
+  <!-- The server-generated .glb base homestead is injected here. -->
+  <a-entity id="base-world"></a-entity>
+
+  <!-- Player-spawned primitives live here. -->
+  <a-entity id="user-objects"></a-entity>
+</a-scene>
+
+<!-- ===================== HUD : TOP LEFT ===================== -->
+<div class="hud" id="hud-top">
+  <h2 id="world-title">LOADING WORLD ...</h2>
+  <div class="meta">
+    PARCEL ID ....... <span id="meta-id">--</span><br />
+    CREATOR ......... <span id="meta-creator">--</span><br />
+    REGISTERED ...... <span id="meta-created">--</span><br />
+    ASSET ........... <span id="meta-asset">--</span>
+  </div>
+</div>
+
+<!-- ===================== HUD : TOP RIGHT ===================== -->
+<div class="hud" id="hud-actions">
+  <div id="identity-badge" class="badge">MODE: --</div>
+  <div style="margin:10px 0 8px;">
+    <button type="button" id="btn-download" class="hidden primary">Download World (.glb)</button>
+    <button type="button" id="btn-reset" class="hidden">Reset Sandbox</button>
+    <button type="button" id="btn-exit">Exit To Hub</button>
+  </div>
+  <div class="meta" id="hud-status" style="max-width:210px;">BOOTING SANDBOX ...</div>
+</div>
+
+<!-- ===================== HUD : BOTTOM LEFT ===================== -->
+<div class="hud" id="hud-help">
+  <strong style="color:var(--neon);">CONTROLS</strong> &nbsp;
+  W A S D = walk &nbsp;&middot;&nbsp; drag mouse = look &nbsp;&middot;&nbsp; shift = sprint<br />
+  <span id="help-owner" class="hidden">
+    click an object = select &nbsp;&middot;&nbsp; editor dock = spawn / transform / delete
+  </span>
+</div>
+
+<!-- ===================== OWNER EDITOR DOCK ===================== -->
+<div id="editor-panel" hidden>
+  <h3>&#9608; World Editor</h3>
+  <div class="meta" style="color:var(--neon-dim);font-size:11px;margin-bottom:10px;">
+    Owner credentials verified. Changes live in this browser session and
+    can be exported as a .glb backup.
+  </div>
+
+  <h4>Spawn Primitive</h4>
+  <div class="spawn-grid">
+    <button type="button" data-spawn="box">+ Cube</button>
+    <button type="button" data-spawn="sphere">+ Sphere</button>
+    <button type="button" data-spawn="cylinder">+ Cylinder</button>
+    <button type="button" data-spawn="cone">+ Cone</button>
+    <button type="button" data-spawn="plane">+ Plane</button>
+    <button type="button" data-spawn="torus">+ Torus</button>
+  </div>
+
+  <h4>Selection</h4>
+  <div class="selected-readout" id="selection-readout">No object selected.<br />Click a spawned object in the scene.</div>
+  <div class="btn-row" style="margin-top:8px;">
+    <button type="button" id="btn-deselect" style="font-size:11px;padding:6px 10px;">Deselect</button>
+    <button type="button" id="btn-duplicate" style="font-size:11px;padding:6px 10px;">Duplicate</button>
+  </div>
+
+  <div id="transform-block" class="hidden">
+    <h4>Transform</h4>
+    <div class="slider-row">
+      <div class="slider-head"><span>Position X</span><span data-out="px">0.00</span></div>
+      <input type="range" data-slider="px" min="-40" max="40" step="0.25" value="0" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Position Y</span><span data-out="py">0.00</span></div>
+      <input type="range" data-slider="py" min="-10" max="30" step="0.25" value="0" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Position Z</span><span data-out="pz">0.00</span></div>
+      <input type="range" data-slider="pz" min="-40" max="40" step="0.25" value="0" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Rotation X</span><span data-out="rx">0&deg;</span></div>
+      <input type="range" data-slider="rx" min="-180" max="180" step="1" value="0" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Rotation Y</span><span data-out="ry">0&deg;</span></div>
+      <input type="range" data-slider="ry" min="-180" max="180" step="1" value="0" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Rotation Z</span><span data-out="rz">0&deg;</span></div>
+      <input type="range" data-slider="rz" min="-180" max="180" step="1" value="0" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Uniform Scale</span><span data-out="scale">1.00</span></div>
+      <input type="range" data-slider="scale" min="0.1" max="8" step="0.05" value="1" />
+    </div>
+    <div class="slider-row">
+      <div class="slider-head"><span>Colour</span><span data-out="color">#00ff00</span></div>
+      <input type="color" data-slider="color" value="#00ff00" />
+    </div>
+    <div class="btn-row" style="margin-top:12px;">
+      <button type="button" id="btn-delete" class="danger" style="font-size:11px;padding:7px 12px;">Delete Selected Object</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BOOT SPLASH ===================== -->
+<div id="boot-splash">
+  <div class="spinner">&#9608;</div>
+  <div id="boot-text">NEGOTIATING WITH MAINFRAME ...</div>
+  <div style="color:var(--neon-dim);font-size:11px;" id="boot-sub">geo://handshake</div>
+</div>
+
+<script src="/js/explore.js"></script>
+</body>
+</html>

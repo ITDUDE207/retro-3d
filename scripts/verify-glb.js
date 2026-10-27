@@ -1,0 +1,20 @@
+import { buildStarterWorldBuffer } from '../lib/glb-builder.js';
+import { NodeIO } from '@gltf-transform/core';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+const glb = await buildStarterWorldBuffer();
+const buf = Buffer.from(glb);
+console.log('byteLength:', buf.length);
+console.log('magic:', buf.readUInt32LE(0).toString(16), '(expect 46546c67)');
+console.log('version:', buf.readUInt32LE(4), 'total:', buf.readUInt32LE(8));
+const jsonLen = buf.readUInt32LE(12);
+const json = JSON.parse(buf.slice(20, 20 + jsonLen).toString('utf8'));
+console.log('nodes:', json.nodes.map(n => n.name).join(', '));
+console.log('meshes:', json.meshes.map(m => `${m.name}(${m.primitives.length})`).join(', '));
+console.log('materials:', json.materials.map(m => m.name).join(', '));
+const tmp = path.join(os.tmpdir(), 'verify-starter.glb');
+fs.writeFileSync(tmp, buf);
+const doc = await new NodeIO().readBinary(fs.readFileSync(tmp));
+console.log('round-trip OK, scene children:', doc.getRoot().listScenes()[0].listChildren().length);

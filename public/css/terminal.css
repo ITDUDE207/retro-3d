@@ -1,0 +1,567 @@
+/* ==================================================================
+   GeoWorld 3D Network - 1996 cyberpunk terminal theme
+   Black background, neon-green monospace, glowing CRT chrome.
+   ================================================================== */
+
+:root {
+  --bg: #000000;
+  --neon: #00ff00;
+  --neon-dim: #00b300;
+  --neon-faint: rgba(0, 255, 0, 0.28);
+  --neon-ghost: rgba(0, 255, 0, 0.08);
+  --amber: #ffb000;
+  --alert: #ff2d2d;
+  --font: "Courier New", "Lucida Console", "DejaVu Sans Mono", monospace;
+  --glow: 0 0 4px rgba(0, 255, 0, 0.85), 0 0 12px rgba(0, 255, 0, 0.45);
+  --glow-strong: 0 0 6px rgba(0, 255, 0, 1), 0 0 18px rgba(0, 255, 0, 0.6),
+    0 0 34px rgba(0, 255, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--neon);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body::before {
+  /* Faint CRT scanline overlay. */
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 255, 0, 0.045) 0px,
+    rgba(0, 255, 0, 0.045) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: screen;
+}
+
+::selection {
+  background: var(--neon);
+  color: #000;
+}
+
+a {
+  color: var(--neon);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--neon-dim);
+}
+
+a:hover,
+a:focus-visible {
+  background: var(--neon);
+  color: #000;
+  text-shadow: none;
+  outline: none;
+}
+
+/* ------------------------------------------------------------------ *
+ * Layout shell
+ * ------------------------------------------------------------------ */
+.terminal-shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 22px 18px 60px;
+}
+
+.panel {
+  border: 1px solid var(--neon);
+  box-shadow: var(--glow), inset 0 0 26px rgba(0, 255, 0, 0.07);
+  background: rgba(0, 12, 0, 0.55);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.panel::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -9px;
+  left: 12px;
+  background: #000;
+  padding: 0 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--neon);
+  text-shadow: var(--glow);
+}
+
+/* ------------------------------------------------------------------ *
+ * Masthead
+ * ------------------------------------------------------------------ */
+.masthead {
+  text-align: center;
+  padding: 26px 14px 18px;
+  border: 1px solid var(--neon);
+  box-shadow: var(--glow-strong), inset 0 0 60px rgba(0, 255, 0, 0.08);
+  margin-bottom: 22px;
+  background: radial-gradient(circle at 50% 120%, rgba(0, 255, 0, 0.14), transparent 70%);
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: clamp(20px, 4.4vw, 40px);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  text-shadow: var(--glow-strong);
+  animation: flicker 6s infinite;
+}
+
+.masthead .tagline {
+  margin: 10px 0 0;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--neon-dim);
+  text-transform: uppercase;
+}
+
+.masthead .ascii {
+  margin: 12px 0 0;
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: pre;
+  color: var(--neon-dim);
+  overflow-x: auto;
+}
+
+@keyframes flicker {
+  0%, 18%, 20%, 50%, 52%, 100% { opacity: 1; }
+  19% { opacity: 0.55; }
+  51% { opacity: 0.72; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Marquee status bar
+ * ------------------------------------------------------------------ */
+.marquee {
+  border-top: 1px solid var(--neon-dim);
+  border-bottom: 1px solid var(--neon-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 5px 0;
+  margin-bottom: 20px;
+  color: var(--amber);
+}
+
+.marquee span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: scroll-left 26s linear infinite;
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+/* ------------------------------------------------------------------ *
+ * Forms & controls
+ * ------------------------------------------------------------------ */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 760px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+label.field {
+  display: block;
+  margin-bottom: 12px;
+}
+
+label.field span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--neon-dim);
+  margin-bottom: 4px;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--neon);
+  color: var(--neon);
+  font-family: var(--font);
+  font-size: 15px;
+  padding: 8px 10px;
+  text-shadow: var(--glow);
+  box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.12);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  outline: none;
+  border-color: var(--neon);
+  box-shadow: var(--glow), inset 0 0 14px rgba(0, 255, 0, 0.25);
+}
+
+input::placeholder {
+  color: rgba(0, 255, 0, 0.35);
+}
+
+button {
+  font-family: var(--font);
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: #000;
+  color: var(--neon);
+  border: 1px solid var(--neon);
+  padding: 9px 16px;
+  cursor: pointer;
+  text-shadow: var(--glow);
+  box-shadow: var(--glow), inset 0 0 12px rgba(0, 255, 0, 0.12);
+  transition: background 90ms linear, color 90ms linear;
+}
+
+button:hover:not(:disabled) {
+  background: var(--neon);
+  color: #000;
+  text-shadow: none;
+}
+
+button:disabled {
+  color: var(--neon-dim);
+  border-color: var(--neon-dim);
+  box-shadow: none;
+  text-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button.danger {
+  color: var(--alert);
+  border-color: var(--alert);
+  box-shadow: 0 0 5px rgba(255, 45, 45, 0.8), inset 0 0 12px rgba(255, 45, 45, 0.15);
+  text-shadow: 0 0 5px rgba(255, 45, 45, 0.9);
+}
+
+button.danger:hover:not(:disabled) {
+  background: var(--alert);
+  color: #000;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ------------------------------------------------------------------ *
+ * Status readouts
+ * ------------------------------------------------------------------ */
+.status-line {
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-top: 10px;
+  min-height: 18px;
+  color: var(--amber);
+}
+
+.status-line.ok { color: var(--neon); }
+.status-line.err { color: var(--alert); }
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--neon-dim);
+  padding: 1px 7px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--neon-dim);
+}
+
+.badge.you {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* ------------------------------------------------------------------ *
+ * Catalog table
+ * ------------------------------------------------------------------ */
+table.catalog {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+table.catalog th,
+table.catalog td {
+  border: 1px solid var(--neon-faint);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+table.catalog th {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--neon-dim);
+  background: rgba(0, 255, 0, 0.05);
+}
+
+table.catalog tbody tr:hover {
+  background: var(--neon-ghost);
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--neon-dim);
+  font-style: italic;
+  padding: 18px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Footer
+ * ------------------------------------------------------------------ */
+.footer {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--neon-dim);
+  margin-top: 26px;
+  line-height: 1.9;
+}
+
+.blink {
+  animation: blink 1.05s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Explore page chrome
+ * ------------------------------------------------------------------ */
+body.explore-body {
+  overflow: hidden;
+  height: 100vh;
+}
+
+a-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+.hud {
+  position: fixed;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid var(--neon);
+  box-shadow: var(--glow);
+  padding: 10px 12px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  pointer-events: auto;
+}
+
+#hud-top {
+  top: 12px;
+  left: 12px;
+  max-width: min(440px, 60vw);
+}
+
+#hud-top h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: var(--glow);
+}
+
+#hud-top .meta {
+  color: var(--neon-dim);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+#hud-help {
+  bottom: 12px;
+  left: 12px;
+  color: var(--neon-dim);
+  font-size: 11px;
+  max-width: min(460px, 70vw);
+}
+
+#hud-actions {
+  top: 12px;
+  right: 12px;
+  text-align: right;
+  /* Keep clear of the owner editor dock when it is on screen. */
+  transition: right 160ms linear;
+}
+
+body.editor-open #hud-actions {
+  right: 336px;
+}
+
+#hud-actions button {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+/* The exporter is the owner's headline action - give it amber weight. */
+#hud-actions button.primary {
+  color: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 5px rgba(255, 176, 0, 0.85), inset 0 0 12px rgba(255, 176, 0, 0.16);
+  text-shadow: 0 0 5px rgba(255, 176, 0, 0.9);
+  letter-spacing: 2px;
+}
+
+#hud-actions button.primary:hover:not(:disabled) {
+  background: var(--amber);
+  color: #000;
+  text-shadow: none;
+}
+
+/* Owner-only editor dock ------------------------------------------- */
+#editor-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  max-height: 100vh;
+  overflow-y: auto;
+  z-index: 30;
+  background: rgba(0, 8, 0, 0.92);
+  border-left: 1px solid var(--neon);
+  box-shadow: -8px 0 26px rgba(0, 255, 0, 0.28);
+  padding: 14px 14px 40px;
+  font-size: 12px;
+}
+
+#editor-panel[hidden] {
+  display: none !important;
+}
+
+#editor-panel h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: var(--glow);
+  border-bottom: 1px dashed var(--neon-dim);
+  padding-bottom: 6px;
+}
+
+#editor-panel h4 {
+  margin: 16px 0 8px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--neon-dim);
+}
+
+#editor-panel .spawn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#editor-panel .spawn-grid button {
+  font-size: 11px;
+  padding: 8px 6px;
+  letter-spacing: 1px;
+}
+
+#editor-panel .selected-readout {
+  border: 1px dashed var(--neon-dim);
+  padding: 6px 8px;
+  color: var(--amber);
+  font-size: 11px;
+  min-height: 30px;
+  word-break: break-all;
+}
+
+.slider-row {
+  margin-bottom: 9px;
+}
+
+.slider-row .slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--neon-dim);
+  text-transform: uppercase;
+}
+
+.slider-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--neon);
+  background: transparent;
+  height: 16px;
+}
+
+.slider-row input[type="color"] {
+  width: 100%;
+  height: 26px;
+  background: #000;
+  border: 1px solid var(--neon);
+  padding: 2px;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Boot splash used while the A-Frame scene initialises. */
+#boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #000;
+  color: var(--neon);
+  text-shadow: var(--glow);
+  font-size: 13px;
+  letter-spacing: 2px;
+  transition: opacity 420ms ease-out;
+}
+
+#boot-splash.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner {
+  font-size: 22px;
+  animation: blink 1.05s step-end infinite;
+}

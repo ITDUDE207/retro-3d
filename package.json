@@ -1,0 +1,23 @@
+{
+  "name": "geoworld-3d-network",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GeoWorld 3D Network - a modern reimagining of the 1996 GeoCities VRML neighborhoods, built on Express + SQLite + A-Frame.",
+  "license": "MIT",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "verify": "node scripts/verify-glb.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.1.1",
+    "better-sqlite3": "^12.2.0",
+    "express": "^4.21.2"
+  }
+}
